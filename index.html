@@ -1,0 +1,332 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>バンドリ！ アワーノーツ イベントPt獲得計算機</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap">
+<style>
+/* Layout: 1カラムの計算パネル。上に入力、下に結果。結果の数字を最大にして一目で読めるようにする */
+:root {
+  --bg: #f1f2f7;
+  --surface: #ffffff;
+  --fg: #1a1c2c;
+  --muted: #62677f;
+  --line: #d9dce9;
+  --accent: #d1226b;
+  --accent-ink: #ffffff;
+  --accent-soft: #fbe7f0;
+  --result-bg: #1d2036;
+  --result-fg: #f3f4fb;
+  --result-muted: #a3a8c4;
+  --result-line: #34385a;
+  --font-display: "Dela Gothic One", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --font-body: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f101a;
+    --surface: #191b2a;
+    --fg: #eceef8;
+    --muted: #9a9fb8;
+    --line: #2d3148;
+    --accent: #ff5c9d;
+    --accent-ink: #1a0711;
+    --accent-soft: #3a1527;
+    --result-bg: #232744;
+    --result-fg: #f3f4fb;
+    --result-muted: #a3a8c4;
+    --result-line: #3a3f66;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f101a;
+  --surface: #191b2a;
+  --fg: #eceef8;
+  --muted: #9a9fb8;
+  --line: #2d3148;
+  --accent: #ff5c9d;
+  --accent-ink: #1a0711;
+  --accent-soft: #3a1527;
+  --result-bg: #232744;
+  --result-fg: #f3f4fb;
+  --result-muted: #a3a8c4;
+  --result-line: #3a3f66;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  padding-inline: 16px;
+  padding-block: 28px 48px;
+}
+.wrap { max-width: 920px; margin-inline: auto; display: flex; flex-direction: column; gap: 20px; }
+.main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 720px) { .main { grid-template-columns: minmax(0, 1fr); } }
+header { display: flex; flex-direction: column; gap: 10px; }
+.eyebrow {
+  font-size: 12px; font-weight: 700; letter-spacing: .14em; color: var(--accent);
+}
+h1 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(24px, 6.4vw, 32px);
+  line-height: 1.25;
+  margin: 0;
+}
+.lead { margin: 0; font-size: 14px; color: var(--muted); }
+.notice {
+  margin: 0; font-size: 13px; font-weight: 700;
+  background: var(--accent-soft); color: var(--fg);
+  padding: 8px 12px; border-radius: 6px;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex; flex-direction: column; gap: 18px;
+}
+.panel h2 { margin: 0; font-size: 13px; letter-spacing: .1em; color: var(--muted); font-weight: 700; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field > label, .group-label { font-size: 14px; font-weight: 700; }
+.group { display: flex; flex-direction: column; gap: 8px; border: 0; padding: 0; margin: 0; min-width: 0; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 420px) { .row2 { grid-template-columns: 1fr; } }
+
+select, input[type="text"] {
+  font: inherit; font-size: 16px; color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  width: 100%; min-width: 0;
+  min-height: 46px;
+}
+select { appearance: none; padding-right: 36px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 19px) 52%, calc(100% - 14px) 52%;
+  background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;
+}
+input[type="text"] { font-variant-numeric: tabular-nums; }
+.unit-wrap { position: relative; }
+.unit-wrap input { padding-right: 34px; }
+.unit-wrap span { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-weight: 700; pointer-events: none; }
+select:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
+
+.results {
+  background: var(--result-bg); color: var(--result-fg);
+  border-radius: 12px; padding: 20px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.results h2 { margin: 0 0 8px; font-size: 13px; letter-spacing: .1em; color: var(--result-muted); font-weight: 700; }
+.res { padding-block: 14px; border-top: 1px solid var(--result-line); display: flex; flex-direction: column; gap: 2px; }
+.res:first-of-type { border-top: 0; padding-top: 4px; }
+.res dt { font-size: 14px; font-weight: 700; color: var(--result-muted); }
+.res dd { margin: 0; }
+.res output { display: block; }
+.num {
+  font-size: clamp(34px, 11vw, 52px); font-weight: 900; line-height: 1.1;
+  font-variant-numeric: tabular-nums; letter-spacing: .01em;
+  overflow-wrap: anywhere;
+}
+.num small { font-size: .38em; font-weight: 700; margin-left: 6px; color: var(--result-muted); letter-spacing: 0; }
+.calc { font-size: 12px; color: var(--result-muted); font-variant-numeric: tabular-nums; }
+.res.pt .num { color: #ff8fbd; }
+.res.item .num { color: #8fd0ff; }
+.res.chal .num { color: #ffd88a; }
+:root[data-theme="light"] .res.pt .num, :root:not([data-theme]) .res.pt .num { }
+
+footer { font-size: 12px; color: var(--muted); }
+footer p { margin: 0 0 4px; }
+@media (prefers-reduced-motion: no-preference) {
+  .num { transition: opacity .12s; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">EVENT POINT CALCULATOR</div>
+    <h1>バンドリ！ アワーノーツ イベントPt獲得計算機</h1>
+    <p class="lead">バンドリ！アワーノーツのイベントPt/イベントアイテム/チャレンジポイントの獲得量の計算機です。手持ち編成のイベントボーナス、ライブで獲得可能なスコアランク、ブースト/チャレンジPt消費量を選択することで獲得量が計算出来ます。</p>
+    <p class="notice">※2026年10月9日より実施された一部ランクでの獲得量変更は反映後の数値となります。</p>
+  </header>
+
+  <div class="main">
+  <section class="panel" aria-labelledby="in-h">
+    <h2 id="in-h">入力</h2>
+
+    <div class="field">
+      <label for="liveType">ライブ形式</label>
+      <select id="liveType">
+        <option value="normal">通常ライブ</option>
+        <option value="challenge">チャレンジライブ</option>
+      </select>
+    </div>
+
+    <fieldset class="group">
+      <legend class="group-label">イベントボーナス</legend>
+      <div class="row2">
+        <div class="field">
+          <label for="bonusPt" style="font-weight:500;color:var(--muted);font-size:13px">イベントPt</label>
+          <div class="unit-wrap"><input id="bonusPt" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" value="0"><span>%</span></div>
+        </div>
+        <div class="field">
+          <label for="bonusItem" style="font-weight:500;color:var(--muted);font-size:13px">イベントアイテム</label>
+          <div class="unit-wrap"><input id="bonusItem" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" value="0"><span>%</span></div>
+        </div>
+      </div>
+    </fieldset>
+
+    <div class="field">
+      <label for="rank">獲得スコアランク</label>
+      <select id="rank">
+        <option value="SS">SS</option>
+        <option value="S">S</option>
+        <option value="A">A</option>
+        <option value="B">B</option>
+        <option value="C">C</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="cost" id="costLabel">ブースト消費量</label>
+      <select id="cost"></select>
+    </div>
+  </section>
+
+  <section class="results" aria-labelledby="out-h">
+    <h2 id="out-h">計算結果</h2>
+    <dl style="margin:0">
+      <div class="res pt">
+        <dt>獲得イベントPt</dt>
+        <dd><output id="outPt" class="num" aria-live="polite">0</output></dd>
+      </div>
+      <div class="res item">
+        <dt>獲得イベントアイテム量</dt>
+        <dd><output id="outItem" class="num" aria-live="polite">0</output></dd>
+      </div>
+      <div class="res chal" id="chalRow">
+        <dt>獲得チャレンジポイント</dt>
+        <dd><output id="outChal" class="num" aria-live="polite">0</output></dd>
+      </div>
+    </dl>
+  </section>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  // 通常ライブ: [イベントPt, イベントアイテム, チャレンジPt]
+  var NORMAL = {
+    SS: [100, 120, 10],
+    S:  [75, 90, 8],
+    A:  [50, 60, 6],
+    B:  [35, 42, 5],
+    C:  [25, 30, 4]
+  };
+  // チャレンジライブ: [イベントPt, イベントアイテム]
+  var CHALLENGE = {
+    SS: [5500, 5650],
+    S:  [4500, 4900],
+    A:  [3500, 4150],
+    B:  [2750, 3400],
+    C:  [2000, 2650]
+  };
+
+  var $ = function (id) { return document.getElementById(id); };
+  var liveType = $('liveType'), rank = $('rank'), cost = $('cost');
+  var bonusPt = $('bonusPt'), bonusItem = $('bonusItem');
+  var fmt = function (n) { return n.toLocaleString('ja-JP'); };
+
+  function toInt(el) {
+    var v = el.value.replace(/[^0-9]/g, '');
+    if (v !== el.value) el.value = v;
+    return v === '' ? 0 : parseInt(v, 10);
+  }
+
+  function fillCost(mode, keep) {
+    var opts = [];
+    if (mode === 'normal') {
+      $('costLabel').textContent = 'ブースト消費量';
+      for (var i = 0; i <= 10; i++) opts.push(i);
+    } else {
+      $('costLabel').textContent = 'チャレンジPt消費量';
+      opts = [200, 400, 800, 1600];
+    }
+    cost.innerHTML = '';
+    opts.forEach(function (v) {
+      var o = document.createElement('option');
+      o.value = String(v); o.textContent = String(v);
+      cost.appendChild(o);
+    });
+    var want = String(keep);
+    cost.value = opts.indexOf(Number(want)) >= 0 ? want : String(mode === 'normal' ? 10 : 200);
+  }
+
+  function save() {
+    try {
+      localStorage.setItem('bdon-calc', JSON.stringify({
+        t: liveType.value, r: rank.value, c: cost.value, bp: bonusPt.value, bi: bonusItem.value
+      }));
+    } catch (e) {}
+  }
+
+  function calc() {
+    var mode = liveType.value, rk = rank.value, c = parseInt(cost.value, 10);
+    var bp = toInt(bonusPt), bi = toInt(bonusItem);
+    var chalRow = $('chalRow');
+
+    if (mode === 'normal') {
+      var b = NORMAL[rk];
+      var m = c === 0 ? 1 : c * 5;           // 消費量0のときは倍率を省く
+      var pt = Math.floor(b[0] * (100 + bp) * m / 100);
+      var it = Math.floor(b[1] * (100 + bi) * m / 100);
+      var ch = b[2] * m;
+      $('outPt').textContent = fmt(pt);
+      $('outItem').textContent = fmt(it);
+      $('outChal').textContent = fmt(ch);
+      chalRow.hidden = false;
+    } else {
+      var d = CHALLENGE[rk];
+      var pt2 = Math.floor(d[0] * (100 + bp) * c / 20000);
+      var it2 = Math.floor(d[1] * (100 + bi) * c / 20000);
+      $('outPt').textContent = fmt(pt2);
+      $('outItem').textContent = fmt(it2);
+      chalRow.hidden = true;
+    }
+    save();
+  }
+
+  // 前回の入力を復元(使えない環境では初期値のまま)
+  var saved = null;
+  try { saved = JSON.parse(localStorage.getItem('bdon-calc') || 'null'); } catch (e) {}
+  if (saved && (saved.t === 'normal' || saved.t === 'challenge')) {
+    liveType.value = saved.t;
+    if (NORMAL[saved.r]) rank.value = saved.r;
+    bonusPt.value = String(saved.bp || '0').replace(/[^0-9]/g, '') || '0';
+    bonusItem.value = String(saved.bi || '0').replace(/[^0-9]/g, '') || '0';
+    fillCost(saved.t, saved.c);
+  } else {
+    fillCost('normal', 10);
+  }
+
+  liveType.addEventListener('change', function () {
+    fillCost(liveType.value, cost.value);
+    calc();
+  });
+  [rank, cost].forEach(function (el) { el.addEventListener('change', calc); });
+  [bonusPt, bonusItem].forEach(function (el) {
+    el.addEventListener('input', calc);
+    el.addEventListener('focus', function () { if (el.value === '0') el.select(); });
+  });
+
+  calc();
+})();
+</script>
+
+</body></html>
